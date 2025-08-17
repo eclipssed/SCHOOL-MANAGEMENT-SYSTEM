@@ -1,3 +1,8 @@
+import { role } from "@/lib/data";
+import { currentUser } from "@clerk/nextjs/server";
+import Image from "next/image";
+import Link from "next/link";
+
 const menuItems = [
   {
     title: "MENU",
@@ -112,3 +117,40 @@ const menuItems = [
     ],
   },
 ];
+
+const Menu = async () => {
+  const user = await currentUser()
+  const role = user?.publicMetadata.role as string
+  return (
+    <div className="mt-4 text-sm ">
+      {menuItems.map((i) => (
+        <div key={i.title} className="flex flex-col gap-2">
+          <span className="hidden lg:block my-4 font-light text-gray-400">
+            {i.title}
+          </span>
+          {i.items.map((item) => {
+            if (item.visible.includes(role)) {
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 hover:bg-lamaSkyLight rounded-md md:px-2"
+                >
+                  <Image
+                    src={item.icon}
+                    alt={item.label}
+                    height={20}
+                    width={20}
+                  />
+                  <span className="hidden lg:block">{item.label}</span>
+                </Link>
+              );
+            }
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Menu;
