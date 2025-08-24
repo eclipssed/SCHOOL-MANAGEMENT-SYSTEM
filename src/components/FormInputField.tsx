@@ -7,6 +7,7 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
 
 type FormInputFieldProps = {
   form: any;
@@ -15,6 +16,7 @@ type FormInputFieldProps = {
   placeholder: string;
   type?: string;
   defaultValue?: string;
+  hidden?: boolean;
 };
 
 function FormInputField({
@@ -23,15 +25,17 @@ function FormInputField({
   name,
   placeholder,
   type,
+  defaultValue,
+  hidden,
 }: FormInputFieldProps) {
   return (
-    <div className="w-full md:w-1/4 flex flex-col gap-2">
+    <div className={hidden ? "hidden" : "w-full md:w-1/4 flex flex-col gap-2"}>
       <FormField
         control={form.control}
         name={name as string}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-xs text-gray-500 ">{label}</FormLabel>
+            <FormLabel className={"text-xs text-gray-500 "}>{label}</FormLabel>
             <FormControl>
               <Input
                 className="ring-[1.5px] ring-gray-300 rounded-md p-2 text-sm w-full"

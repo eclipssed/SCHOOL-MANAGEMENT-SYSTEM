@@ -1,10 +1,41 @@
 import Announcements from "@/components/Announcements";
 import BigCalender from "@/components/BigCalender";
+import BigCalenderContainer from "@/components/BigCalenderContainer";
+import FormContainer from "@/components/FormContainer";
 import PerformanceChart from "@/components/PerformanceChart";
+import prisma from "@/lib/prisma";
+import { getRole } from "@/lib/role";
+import { Teacher } from "@prisma/client";
+import { intlFormat } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-const SingleTeacherPage = () => {
+const SingleTeacherPage = async ({ params }: { params: { id: string } }) => {
+  const { id } = await params;
+  const { role } = await getRole();
+
+  const teacher:
+    | (Teacher & {
+        _count: { subjects: number; classes: number; lessons: number };
+      })
+    | null = await prisma.teacher.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      _count: {
+        select: {
+          subjects: true,
+          lessons: true,
+          classes: true,
+        },
+      },
+    },
+  });
+  if (!teacher) {
+    return notFound();
+  }
   return (
     <div className="flex-1 p-4 flex flex-col xl:flex-row  gap-4">
       {/* left */}
@@ -15,9 +46,7 @@ const SingleTeacherPage = () => {
           <div className="bg-lamaSky px-4 py-6 rounded-md flex-1 flex gap-4 ">
             <div className="sm:w-1/3 w-1/2 flex justify-center items-center">
               <Image
-                src={
-                  "https://images.pexels.com/photos/2888150/pexels-photo-2888150.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                }
+                src={teacher.img || "/avatar.png"}
                 alt="avatar"
                 width={144}
                 height={144}
@@ -25,7 +54,14 @@ const SingleTeacherPage = () => {
               />
             </div>
             <div className="sm:w-2/3 w-1/2 flex flex-col justify-between gap-4">
-              <h1 className="text-xl font-semibold">Furqan Mirza</h1>
+              <div className="flex gap-2">
+                <h1 className="text-xl font-semibold">
+                  {teacher.name + " " + teacher.surname}
+                </h1>
+                {role === "admin" && (
+                  <FormContainer table="teacher" type="update" data={teacher} />
+                )}
+              </div>
               <p className="text-sm text-gray-500">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
               </p>
@@ -40,7 +76,7 @@ const SingleTeacherPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>A+</span>
+                  <span>{teacher.bloodType}</span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -49,7 +85,9 @@ const SingleTeacherPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>January 6, 2025</span>
+                  <span>
+                    {new Intl.DateTimeFormat("en-us").format(teacher.birthday)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -58,7 +96,7 @@ const SingleTeacherPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>user@gmail.com</span>
+                  <span>{teacher.email}</span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -67,7 +105,7 @@ const SingleTeacherPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>+91 342 9887654</span>
+                  <span>{teacher.phone}</span>
                 </div>
               </div>
             </div>
@@ -98,7 +136,9 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">3</h1>
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.classes}
+                </h1>
                 <span className="text-sm text-gray-400">Classes</span>
               </div>
             </div>
@@ -112,7 +152,9 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">6</h1>
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.lessons}
+                </h1>
                 <span className="text-sm text-gray-400">Lessons</span>
               </div>
             </div>
@@ -126,8 +168,10 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">2</h1>
-                <span className="text-sm text-gray-400">Branches</span>
+                <h1 className="text-xl font-semibold">
+                  {teacher._count.subjects}
+                </h1>
+                <span className="text-sm text-gray-400">Subjects</span>
               </div>
             </div>
           </div>
@@ -135,7 +179,7 @@ const SingleTeacherPage = () => {
         {/* botton */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
           <h1>Teacher's schedule</h1>
-          <BigCalender />
+          <BigCalenderContainer type="teacherId" id={teacher.id} />
         </div>
       </div>
       {/* right */}

@@ -27,7 +27,7 @@ import {
 } from "../ui/select";
 import Image from "next/image";
 import { Input } from "../ui/input";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 const MAX_FILE_SIZE = 5000000;
 const ACCEPTED_IMAGE_TYPES = [
@@ -62,7 +62,7 @@ const formSchema = z.object({
   address: z.string().min(2, {
     message: "Address is required and must be atleast 2 characters.",
   }),
-  blood: z.string().min(1, {
+  bloodType: z.string().min(1, {
     message: "Blood is required and must be atleast 1 character.",
   }),
   birthday: z.date({
@@ -91,9 +91,11 @@ const formSchema = z.object({
 const AnnouncementForm = ({
   type,
   data,
+  setOpen,
 }: {
   type: "create" | "update";
   data: any;
+  setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -108,7 +110,7 @@ const AnnouncementForm = ({
       phone: data?.phone,
       birthday: data?.date,
       img: data?.img,
-      blood: data?.blood,
+      bloodType: data?.bloodType,
     },
   });
 
@@ -184,10 +186,10 @@ const AnnouncementForm = ({
             form={form}
             type="tel"
           />
-          {/* blood */}
+          {/* bloodType */}
           <FormInputField
             label="Blood"
-            name="blood"
+            name="bloodType"
             placeholder="O-"
             form={form}
           />

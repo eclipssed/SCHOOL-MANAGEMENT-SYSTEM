@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const signInPage = () => {
-  const { isSignedIn, user, isLoaded } = useUser();
+  const {  user,  } = useUser();
   const router = useRouter();
 
   useEffect(() => {
