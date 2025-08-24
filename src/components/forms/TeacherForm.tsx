@@ -87,7 +87,8 @@ const TeacherForm = ({
       birthday: data?.birthday ?? undefined,
       img: data?.img ?? "",
       bloodType: data?.bloodType ?? "",
-      subjects: data?.subjects?.map((s: { id: string }) => s.id) ?? [],
+      subjects:
+        data?.subjects?.map((s: { id: string | number }) => String(s.id)) ?? [],
     },
   });
 
@@ -346,6 +347,8 @@ const TeacherForm = ({
           control={form.control}
           name="subjects"
           render={({ field }) => {
+            console.log(field.value);
+
             return (
               <FormItem>
                 <FormLabel className="text-xs text-gray-500 ">

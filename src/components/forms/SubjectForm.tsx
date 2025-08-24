@@ -122,7 +122,7 @@ const SubjectForm = ({
             control={form.control}
             name="teachers"
             render={({ field }) => {
-              console.log(field.value);
+              // console.log(field.value);
               return (
                 <FormItem>
                   <FormLabel className="text-xs text-gray-500 ">

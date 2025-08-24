@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 export interface Option {
   id: string;
   name: string;
-  surname: string;
+  surname?: string;
 }
 
 interface MultiSelectProps {
@@ -90,9 +90,7 @@ export function MultiSelect({
                     handleUnselect(option.id);
                   }}
                 >
-                  {multiSelectType === "teacher"
-                    ? option.name + " " + option.surname
-                    : option.name}
+                  {option.name}
                   <span
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
@@ -139,9 +137,7 @@ export function MultiSelect({
                         : "opacity-0"
                     )}
                   />
-                  {multiSelectType === "teacher"
-                    ? option.name + " " + option.surname
-                    : option.name}
+                  {option.name}
                 </CommandItem>
               ))}
             </CommandGroup>
