@@ -60,7 +60,8 @@ const SubjectForm = ({
     defaultValues: {
       id: data?.id,
       name: data?.name ?? "",
-      teachers: data?.teachers?.map((t: any) => t.id) ?? [],
+      teachers:
+        data?.teachers?.map((t: { id: string | number }) => String(t.id)) ?? [],
     },
   });
 

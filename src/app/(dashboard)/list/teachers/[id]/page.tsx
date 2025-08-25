@@ -24,6 +24,7 @@ const SingleTeacherPage = async ({ params }: { params: { id: string } }) => {
       id: id,
     },
     include: {
+      subjects: true,
       _count: {
         select: {
           subjects: true,

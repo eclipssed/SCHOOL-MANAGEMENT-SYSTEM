@@ -87,7 +87,7 @@ export function MultiSelect({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleUnselect(option.id);
+                    handleUnselect(String(option.id));
                   }}
                 >
                   {option.name}
@@ -95,7 +95,7 @@ export function MultiSelect({
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        handleUnselect(option.id);
+                        handleUnselect(String(option.id));
                       }
                     }}
                     onMouseDown={(e) => {
@@ -105,7 +105,7 @@ export function MultiSelect({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleUnselect(option.id);
+                      handleUnselect(String(option.id));
                     }}
                   >
                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />

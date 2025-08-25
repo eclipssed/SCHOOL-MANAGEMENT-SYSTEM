@@ -122,7 +122,6 @@ const TeacherForm = ({
       }
     }
   }, [state, form.watch("img")]);
-  // console.log(relatedData);
 
   const { subjects } = relatedData;
 
@@ -169,6 +168,7 @@ const TeacherForm = ({
             form={form}
             type="text"
           />
+          {/* hide password if type === update */}
           {/* password */}
           <FormInputField
             label="Password"
@@ -347,7 +347,7 @@ const TeacherForm = ({
           control={form.control}
           name="subjects"
           render={({ field }) => {
-            console.log(field.value);
+            // console.log(field.value);
 
             return (
               <FormItem>

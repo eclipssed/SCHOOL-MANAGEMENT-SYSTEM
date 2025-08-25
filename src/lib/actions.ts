@@ -286,18 +286,17 @@ export const updateTeacher = async (
   }
   try {
     const user = await clerkAuthClient.users.updateUser(data?.id, {
+      ...(data.password !== "" && { password: data.password }),
       username: data.username,
-      password: data.password,
       firstName: data.name,
       lastName: data.surname,
-      publicMetadata: { role: "teacher" },
     });
     // console.log("user: ", user);
     try {
       await prisma.teacher.update({
         where: { id: data.id },
         data: {
-          // id: user.id,
+          // ...(data.password !== "" && { password: data.password }),
           email: data.email,
           username: data.username,
           name: data.name,
@@ -309,7 +308,7 @@ export const updateTeacher = async (
           sex: data.sex,
           birthday: data.birthday,
           subjects: {
-            connect: data.subjects?.map((subjectId: string) => ({
+            set: data.subjects?.map((subjectId: string) => ({
               id: parseInt(subjectId),
             })),
           },
@@ -317,7 +316,7 @@ export const updateTeacher = async (
       });
     } catch (prismaErr) {
       // Prisma failed → roll back Clerk user
-      await clerkAuthClient.users.deleteUser(user.id);
+      // await clerkAuthClient.users.deleteUser(user.id);
       throw prismaErr;
     }
     // revalidatePath("/list/teachers");
