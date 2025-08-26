@@ -1,8 +1,7 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-
+import { CldUploadWidget } from "next-cloudinary";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,7 +12,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import FormInputField from "../FormInputField";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader } from "lucide-react";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
@@ -26,8 +25,24 @@ import {
   SelectValue,
 } from "../ui/select";
 import Image from "next/image";
-import { Input } from "../ui/input";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useActionState,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
+import {
+  StudentPropType,
+  studentSchema,
+  TeacherPropType,
+  teacherSchema,
+} from "@/lib/formValidationSchemas";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
+import { createStudent, updateStudent } from "@/lib/actions";
+import { MultiSelect } from "../MultiSelect";
 
 const MAX_FILE_SIZE = 5000000;
 const ACCEPTED_IMAGE_TYPES = [
@@ -37,97 +52,110 @@ const ACCEPTED_IMAGE_TYPES = [
   "image/webp",
 ];
 
-const formSchema = z.object({
-  username: z
-    .string()
-    .min(3, {
-      message: "Username must be at least 3 characters.",
-    })
-    .max(20, {
-      message: "Username must be at most 20 characters.",
-    }),
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-  firstName: z.string().min(2, {
-    message: "First name is required and must be atleast 2 characters.",
-  }),
-  lastName: z.string().min(2, {
-    message: "Last name is required and must be atleast 2 characters.",
-  }),
-  phone: z.string().min(11, {
-    message: "Phone is required and must be valid and atleast 11 digits.",
-  }),
-  address: z.string().min(2, {
-    message: "Address is required and must be atleast 2 characters.",
-  }),
-  bloodType: z.string().min(1, {
-    message: "bloodType is required and must be atleast 1 character.",
-  }),
-  birthday: z.date({
-    message: "Birthday is required.",
-  }),
-  img: z.union([
-    z.string().url({ message: "Invalid image URL" }),
-    z.custom<FileList>(
-      (files) => {
-        if (!(files instanceof FileList)) return false;
-        if (files.length === 0) return false;
-
-        const file = files[0];
-        const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        if (!validTypes.includes(file.type)) return false;
-        if (file.size > 2 * 1024 * 1024) return false; // 2MB limit
-
-        return true;
-      },
-      { message: "Image is required and must be JPG, PNG, or WEBP under 2MB" }
-    ),
-  ]),
-  sex: z.enum(["male", "female"], { message: "Sex is required" }),
-});
-
 const StudentForm = ({
   type,
   data,
   setOpen,
+  relatedData,
 }: {
   type: "create" | "update";
-  data: any;
   setOpen: Dispatch<SetStateAction<boolean>>;
+  data?: any;
+  relatedData?: any;
 }) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const [state, formAction] = useActionState(
+    type === "create" ? createStudent : updateStudent,
+    {
+      success: false,
+      error: false,
+      message: "",
+    }
+  );
+  const [isPending, startTransition] = useTransition();
+  const [img, setImg] = useState<any>();
+  const router = useRouter();
+
+  const form = useForm<StudentPropType>({
+    resolver: zodResolver(studentSchema),
     defaultValues: {
-      username: data?.username,
-      email: data?.email,
-      password: data?.password,
-      firstName: data?.firstName,
-      lastName: data?.lastName,
-      sex: data?.sex,
-      address: data?.address,
-      phone: data?.phone,
-      birthday: data?.date,
-      img: data?.img,
-      bloodType: data?.bloodType,
+      id: data?.id,
+      username: data?.username ?? "",
+      email: data?.email ?? "",
+      password: data?.password ?? "",
+      name: data?.name ?? "",
+      surname: data?.surname ?? "",
+      sex: data?.sex ?? undefined,
+      address: data?.address ?? "",
+      phone: data?.phone ?? "",
+      birthday: data?.birthday ?? undefined,
+      img: data?.img ?? "",
+      bloodType: data?.bloodType ?? "",
+      gradeId: data?.gradeId ?? "", //double check if the below IDs is coming from data or related data
+      classId: data?.classId ?? "",
+      parentId: data?.parentId ?? "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  function onSubmit(values: StudentPropType) {
+    startTransition(() => {
+      formAction(values);
+    });
   }
+
+  useEffect(() => {
+    if (form.getValues("img")) setImg(form.getValues("img"));
+    if (state.success) {
+      toast.success(
+        `Student had been ${type === "create" ? "created" : "updated"}`
+      );
+      router.refresh();
+      setOpen(false);
+    }
+    if (state.error) {
+      if (state.field) {
+        form.setError(
+          state.field as any,
+          {
+            type: "manual",
+            message: state.message,
+          },
+          { shouldFocus: true }
+        );
+      } else {
+        toast.error(state.message);
+      }
+    }
+  }, [state, form.watch("img")]);
+
+  const { classes, grades } = relatedData;
+
+  const multiSelectType = "teacher";
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-8"
+        onSubmit={form.handleSubmit(onSubmit, (err) => console.log(err))}
+        className="flex flex-col gap-2"
       >
-        <h1 className="text-xl font-semibold">Create new Student</h1>
-        <span className="text-xs text-gray-400 font-medium">
-          Authentication information
-        </span>
+        <div className="flex gap-8 items-center">
+          <div>
+            <h1 className="text-xl font-semibold">
+              {type === "create"
+                ? "Create a new student"
+                : "Update the student"}
+            </h1>
+            <span className="text-xs text-gray-400 font-medium">
+              Authentication information
+            </span>
+          </div>
+          <Image
+            src={img ? img : "/avatar.png"}
+            alt="upload icon"
+            className="h-[100px] w-[100px] rounded-md"
+            width={50}
+            height={50}
+          />
+        </div>
         <div className="flex justify-between flex-wrap gap-4">
           {/* username */}
           <FormInputField
@@ -144,6 +172,7 @@ const StudentForm = ({
             form={form}
             type="text"
           />
+          {/* hide password if type === update */}
           {/* password */}
           <FormInputField
             label="Password"
@@ -156,19 +185,26 @@ const StudentForm = ({
         <span className="text-xs text-gray-400 font-medium">
           Personal information
         </span>
-        <div className="flex justify-between flex-wrap gap-4">
+        <div className="flex justify-between flex-wrap gap-2">
           {/* firstName */}
           <FormInputField
             label="First Name"
-            name="firstName"
+            name="name"
             placeholder="Furqan"
             form={form}
           />
           {/* lastName */}
           <FormInputField
             label="Last Name"
-            name="lastName"
+            name="surname"
             placeholder="Mirza"
+            form={form}
+          />
+          {/* PARENT-ID */}
+          <FormInputField
+            label="ParentId"
+            name="parentId"
+            placeholder="parentId"
             form={form}
           />
           {/* address */}
@@ -186,13 +222,14 @@ const StudentForm = ({
             form={form}
             type="tel"
           />
-          {/* bloodType */}
+          {/* blood */}
           <FormInputField
-            label="bloodType"
+            label="Blood"
             name="bloodType"
             placeholder="O-"
             form={form}
           />
+
           {/* sex */}
           <div className="w-full md:w-1/4 flex flex-col gap-2 ">
             <FormField
@@ -211,8 +248,8 @@ const StudentForm = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-300 text-xs" />
@@ -221,74 +258,48 @@ const StudentForm = ({
             />
           </div>
           {/* img */}
-
           <div className="w-full md:w-1/4 flex flex-col gap-2">
             <FormField
               control={form.control}
               name="img"
               render={({ field }) => {
-                const [preview, setPreview] = useState<string | null>(null);
-
-                useEffect(() => {
-                  // Show preview if default value is a URL
-                  if (
-                    typeof field.value === "string" &&
-                    field.value.startsWith("http")
-                  ) {
-                    setPreview(field.value);
-                  }
-                }, [field.value]);
-
                 return (
-                  <FormItem>
-                    <FormLabel className="text-xs text-gray-500">
-                      Image
+                  <>
+                    <FormLabel className="text-xs text-gray-500 ">
+                      Profile Image
                     </FormLabel>
-
-                    {/* Upload button */}
-                    <FormLabel
-                      htmlFor="img"
-                      className="text-gray-500 flex gap-2 items-center ring-[1.5px] ring-gray-300 rounded-md py-1 px-2 text-sm w-full cursor-pointer"
+                    <CldUploadWidget
+                      onSuccess={(result, { widget }) => {
+                        if (typeof result.info !== "string") {
+                          setImg(result.info?.secure_url);
+                          field.onChange(result?.info?.secure_url);
+                        }
+                        widget.close();
+                      }}
+                      uploadPreset={
+                        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+                      }
                     >
-                      <Image
-                        src={"/upload.png"}
-                        alt="upload icon"
-                        width={28}
-                        height={28}
-                      />
-                      <span>Upload Photo</span>
-                    </FormLabel>
-
-                    {/* Preview image if exists */}
-                    {preview && (
-                      <div className="mt-2">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="w-32 h-32 object-cover rounded-md border"
-                        />
-                      </div>
-                    )}
-
-                    <FormControl>
-                      <Input
-                        id="img"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const files = e.target.files as FileList;
-                          field.onChange(files);
-
-                          if (files && files.length > 0) {
-                            setPreview(URL.createObjectURL(files[0]));
-                          }
-                        }}
-                      />
-                    </FormControl>
+                      {({ open }) => {
+                        return (
+                          <div
+                            onClick={() => open()}
+                            className="text-gray-500 flex gap-2 items-center ring-[1.5px] ring-gray-300 rounded-md py-1 px-2 text-sm w-full cursor-pointer"
+                          >
+                            <Image
+                              src={"/upload.png"}
+                              alt="upload icon"
+                              width={28}
+                              height={28}
+                            />
+                            <span>Upload Photo</span>
+                          </div>
+                        );
+                      }}
+                    </CldUploadWidget>
 
                     <FormMessage className="text-red-300 text-xs" />
-                  </FormItem>
+                  </>
                 );
               }}
             />
@@ -340,13 +351,100 @@ const StudentForm = ({
               )}
             />
           </div>
+          {/* SELECT GRADES */}
+          <div className="w-full md:w-1/4 flex flex-col gap-2 ">
+            <FormField
+              control={form.control}
+              name="gradeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500 ">
+                    Grade
+                  </FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    defaultValue={field.value.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="ring-[1.5px] ring-gray-300 rounded-md p-2 text-sm w-full">
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {grades.map((grade: { id: number; level: number }) => (
+                        <SelectItem key={grade.id} value={grade.id.toString()}>
+                          {grade.level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-300 text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
+          {/* SELECT CLASSES */}
+          <div className="w-full md:w-1/4 flex flex-col gap-2 ">
+            <FormField
+              control={form.control}
+              name="classId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500 ">
+                    Classes
+                  </FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    defaultValue={field.value.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="ring-[1.5px] ring-gray-300 rounded-md p-2 text-sm w-full">
+                        <SelectValue placeholder="Select Class" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {classes.map(
+                        (classItem: {
+                          id: number;
+                          name: string;
+                          capacity: number;
+                          _count: { students: number };
+                        }) => (
+                          <SelectItem
+                            key={classItem.id}
+                            value={classItem.id.toString()}
+                          >
+                            {classItem.name} -{" "}
+                            {classItem._count.students +
+                              "/" +
+                              classItem.capacity}{" "}
+                            capacity
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-300 text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <Button
           className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md"
           type="submit"
         >
-          {type === "create" ? "create" : "update"}
+          {isPending ? (
+            <p className="flex gap-2 items-center ">
+              {type === "create" ? "creating" : "updating"}{" "}
+              <Loader className="animate-spin" />
+            </p>
+          ) : type === "create" ? (
+            "create"
+          ) : (
+            "update"
+          )}
         </Button>
       </form>
     </Form>

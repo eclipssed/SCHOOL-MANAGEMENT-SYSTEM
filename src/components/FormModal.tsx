@@ -12,7 +12,12 @@ import React, {
   ReactElement,
 } from "react";
 import dynamic from "next/dynamic";
-import { deleteClass, deleteSubject, deleteTeacher } from "@/lib/actions";
+import {
+  deleteClass,
+  deleteStudent,
+  deleteSubject,
+  deleteTeacher,
+} from "@/lib/actions";
 import { Loader } from "lucide-react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -23,7 +28,7 @@ const deleteActionMap = {
   subject: deleteSubject,
   class: deleteClass,
   teacher: deleteTeacher,
-  student: deleteSubject,
+  student: deleteStudent, // below that no delete action is implemented.
   parent: deleteSubject,
   lesson: deleteSubject,
   exam: deleteSubject,
@@ -88,8 +93,13 @@ const forms: {
       relatedData={relatedData}
     />
   ),
-  student: (type, data, setOpen) => (
-    <StudentForm type={type} data={data} setOpen={setOpen} />
+  student: (type, data, setOpen, relatedData) => (
+    <StudentForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
   ),
   parent: (type, data, setOpen) => (
     <ParentForm type={type} data={data} setOpen={setOpen} />

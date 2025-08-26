@@ -1,10 +1,44 @@
 import Announcements from "@/components/Announcements";
 import BigCalender from "@/components/BigCalender";
+import BigCalenderContainer from "@/components/BigCalenderContainer";
+import FormContainer from "@/components/FormContainer";
 import PerformanceChart from "@/components/PerformanceChart";
+import StudentAttendanceCard from "@/components/StudentAttendanceCard";
+import prisma from "@/lib/prisma";
+import { getRole } from "@/lib/role";
+import { Class, Student } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-const SingleStudentPage = () => {
+const SingleStudentPage = async ({ params }: { params: { id: string } }) => {
+  const { id } = await params;
+  const { role } = await getRole();
+
+  const student:
+    | (Student & {
+        class: Class & { _count: { lessons: number } };
+      })
+    | null = await prisma.student.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      class: {
+        include: {
+          _count: {
+            select: {
+              lessons: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!student) {
+    return notFound();
+  }
   return (
     <div className="flex-1 p-4 flex flex-col xl:flex-row  gap-4">
       {/* left */}
@@ -15,9 +49,7 @@ const SingleStudentPage = () => {
           <div className="bg-lamaSky px-4 py-6 rounded-md flex-1 flex gap-4 ">
             <div className="sm:w-1/3 w-1/2 flex justify-center items-center">
               <Image
-                src={
-                  "https://images.pexels.com/photos/936126/pexels-photo-936126.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                }
+                src={student.img || "/avatar.png"}
                 alt="avatar"
                 width={144}
                 height={144}
@@ -25,7 +57,14 @@ const SingleStudentPage = () => {
               />
             </div>
             <div className="sm:w-2/3 w-1/2 flex flex-col justify-between gap-4">
-              <h1 className="text-xl font-semibold">Furqan Mirza</h1>
+              <div className="flex gap-2">
+                <h1 className="text-xl font-semibold">
+                  {student.name + " " + student.surname}
+                </h1>
+                {role === "admin" && (
+                  <FormContainer table="student" type="update" data={student} />
+                )}
+              </div>{" "}
               <p className="text-sm text-gray-500">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
               </p>
@@ -40,7 +79,7 @@ const SingleStudentPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>A+</span>
+                  <span>{student.bloodType}</span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -49,7 +88,9 @@ const SingleStudentPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>January 6, 2025</span>
+                  <span>
+                    {new Intl.DateTimeFormat("en-us").format(student.birthday)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -58,7 +99,7 @@ const SingleStudentPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>user@gmail.com</span>
+                  <span>{student.email || "-"}</span>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-1/3 lg:w-full 2xl:w-1/3">
                   <Image
@@ -67,7 +108,7 @@ const SingleStudentPage = () => {
                     width={14}
                     height={14}
                   />{" "}
-                  <span>+91 342 9887654</span>
+                  <span>{student.phone}</span>
                 </div>
               </div>
             </div>
@@ -83,10 +124,9 @@ const SingleStudentPage = () => {
                 height={24}
                 className="w-6 h-6"
               />
-              <div>
-                <h1 className="text-xl font-semibold">90%</h1>
-                <span className="text-sm text-gray-400">Attendance</span>
-              </div>
+              <Suspense fallback="loading...">
+                <StudentAttendanceCard id={student.id} />
+              </Suspense>
             </div>
             {/* card */}
             <div className="w-full bg-white p-4 rounded-md  flex gap-4 md:w-[48%] xl:w-[45%] 2xl:w-[48%]">
@@ -98,7 +138,9 @@ const SingleStudentPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">5th</h1>
+                <h1 className="text-xl font-semibold">
+                  {student.class.name.charAt(0)}
+                </h1>
                 <span className="text-sm text-gray-400">Grade</span>
               </div>
             </div>
@@ -112,7 +154,9 @@ const SingleStudentPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">6</h1>
+                <h1 className="text-xl font-semibold">
+                  {student.class._count.lessons}
+                </h1>
                 <span className="text-sm text-gray-400">Lessons</span>
               </div>
             </div>
@@ -126,7 +170,7 @@ const SingleStudentPage = () => {
                 className="w-6 h-6"
               />
               <div>
-                <h1 className="text-xl font-semibold">4A</h1>
+                <h1 className="text-xl font-semibold">{student.class.name}</h1>
                 <span className="text-sm text-gray-400">class</span>
               </div>
             </div>
@@ -135,7 +179,7 @@ const SingleStudentPage = () => {
         {/* botton */}
         <div className="mt-4 bg-white rounded-md p-4 h-[800px]">
           <h1>Students's schedule</h1>
-          <BigCalender />
+          <BigCalenderContainer type="classId" id={student.class.id} />
         </div>
       </div>
       {/* right */}

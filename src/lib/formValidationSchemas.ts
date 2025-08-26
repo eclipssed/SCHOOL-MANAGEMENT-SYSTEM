@@ -69,3 +69,53 @@ export const teacherSchema = z.object({
   subjects: z.array(z.string()).optional(),
 });
 export type TeacherPropType = z.infer<typeof teacherSchema>;
+
+//  STUDENT SHCEMA
+export const studentSchema = z.object({
+  id: z.string().optional(),
+  username: z
+    .string()
+    .min(3, {
+      message: "Username must be at least 3 characters.",
+    })
+    .max(20, {
+      message: "Username must be at most 20 characters.",
+    }),
+  email: z
+    .string()
+    .email({ message: "Invalid email address" })
+    .or(z.literal(""))
+    .optional(),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters." })
+    .regex(/[A-Z]/, {
+      message: "Password must contain at least one uppercase letter.",
+    })
+    .regex(/[0-9]/, { message: "Password must contain at least one number." })
+    .regex(/[^A-Za-z0-9]/, {
+      message: "Password must contain at least one special character.",
+    })
+    .or(z.literal(""))
+    .optional(),
+  name: z.string().min(2, {
+    message: "First name is required and must be atleast 2 characters.",
+  }),
+  surname: z.string().min(2, {
+    message: "Last name is required and must be atleast 2 characters.",
+  }),
+  phone: z.string().optional(),
+  address: z.string(),
+  bloodType: z.string().min(1, {
+    message: "Blood is required and must be atleast 1 character.",
+  }),
+  birthday: z.date({
+    message: "Birthday is required.",
+  }),
+  img: z.string().optional(),
+  sex: z.enum(["MALE", "FEMALE"], { message: "Sex is required" }),
+  gradeId: z.number().min(1, { message: "Grade is required." }),
+  classId: z.number().min(1, { message: "Class is required." }),
+  parentId: z.string().min(1, { message: "Parent Id is required." }),
+});
+export type StudentPropType = z.infer<typeof studentSchema>;
