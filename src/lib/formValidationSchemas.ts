@@ -1,5 +1,17 @@
 import z from "zod";
 
+// EXAM SCHEMA
+export const examSchema = z.object({
+  id: z.number().optional(),
+  title: z.string().min(1, {
+    message: "Title name is required.",
+  }),
+  startTime: z.date({ message: "Start time is required." }),
+  endTime: z.date({ message: "end time is required." }),
+  lessonId: z.number({ message: "Lesson is required." }),
+});
+export type ExamPropType = z.infer<typeof examSchema>;
+
 // SUBJECT SCHEMA
 export const subjectSchema = z.object({
   id: z.number().optional(),

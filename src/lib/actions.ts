@@ -3,13 +3,14 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import {
   ClassPropType,
+  ExamPropType,
   StudentPropType,
   SubjectPropType,
   TeacherPropType,
 } from "./formValidationSchemas";
 import prisma from "./prisma";
-import { Prisma } from "@prisma/client";
 import { handleAppError } from "./errorHandler";
+import { getRole } from "./role";
 
 const clerkAuthClient = await clerkClient();
 export type currentStateType =
@@ -109,6 +110,142 @@ export const deleteSubject = async (
       },
     });
     // revalidatePath("/list/subjects");
+    return {
+      success: true,
+      error: false,
+      message: "success",
+    };
+  } catch (error) {
+    console.error("error:", JSON.stringify(error, null, 2));
+    const { field, message } = handleAppError(error);
+    return {
+      success: false,
+      error: true,
+      field,
+      message,
+    };
+  }
+};
+
+// EXAM ACTIONS
+// CREATE
+export const createExam = async (
+  currentState: currentStateType,
+  data: ExamPropType
+): Promise<currentStateType> => {
+  const { currentUserId, role } = await getRole();
+
+  try {
+    if (role === "teacher") {
+      const teacherLesson = await prisma.lesson.findFirst({
+        where: {
+          teacherId: currentUserId!,
+          id: data.lessonId,
+        },
+      });
+
+      if (!teacherLesson) {
+        return {
+          success: false,
+          error: true,
+          message: "Not a teacher lesson.",
+        };
+      }
+    }
+
+    await prisma.exam.create({
+      data: {
+        title: data?.title,
+        startTime: data?.startTime,
+        endTime: data?.endTime,
+        lessonId: data?.lessonId,
+      },
+    });
+    // revalidatePath("/list/Exams");
+    return {
+      success: true,
+      error: false,
+      message: "success",
+    };
+  } catch (error) {
+    console.error("error:", JSON.stringify(error, null, 2));
+    const { field, message } = handleAppError(error);
+    return {
+      success: false,
+      error: true,
+      field,
+      message,
+    };
+  }
+};
+// UPDATE
+export const updateExam = async (
+  currentState: currentStateType,
+  data: ExamPropType
+): Promise<currentStateType> => {
+  const { currentUserId, role } = await getRole();
+
+  try {
+    if (role === "teacher") {
+      const teacherLesson = await prisma.lesson.findFirst({
+        where: {
+          teacherId: currentUserId!,
+          id: data.lessonId,
+        },
+      });
+
+      if (!teacherLesson) {
+        return {
+          success: false,
+          error: true,
+          message: "Not a teacher lesson.",
+        };
+      }
+    }
+
+    await prisma.exam.update({
+      where: { id: data.id },
+      data: {
+        title: data?.title,
+        startTime: data?.startTime,
+        endTime: data?.endTime,
+        lessonId: data?.lessonId,
+      },
+    });
+    // revalidatePath("/list/Exams");
+    return {
+      success: true,
+      error: false,
+      message: "success",
+    };
+  } catch (error) {
+    console.error("error:", JSON.stringify(error, null, 2));
+    const { field, message } = handleAppError(error);
+    return {
+      success: false,
+      error: true,
+      field,
+      message,
+    };
+  }
+};
+// DELETE
+export const deleteExam = async (
+  currentState: currentStateType,
+  data: FormData
+): Promise<currentStateType> => {
+  const id = data.get("id") as string;
+  const { currentUserId, role } = await getRole();
+  try {
+    await prisma.exam.delete({
+      where: {
+        id: parseInt(id),
+        ...(role === "teacher"
+          ? { lesson: { teacherId: currentUserId! } }
+          : {}),
+      },
+    });
+    // revalidatePath("/list/Exams");
     return {
       success: true,
       error: false,
@@ -269,7 +406,6 @@ export const createTeacher = async (
     };
   }
 };
-
 // UPDATE
 export const updateTeacher = async (
   currentState: currentStateType,
@@ -330,7 +466,6 @@ export const updateTeacher = async (
     };
   }
 };
-
 // DELETE
 export const deleteTeacher = async (
   currentState: currentStateType,
@@ -431,7 +566,6 @@ export const createStudent = async (
     };
   }
 };
-
 // UPDATE
 export const updateStudent = async (
   currentState: currentStateType,
@@ -490,7 +624,6 @@ export const updateStudent = async (
     };
   }
 };
-
 // DELETE
 export const deleteStudent = async (
   currentState: currentStateType,

@@ -14,6 +14,7 @@ import React, {
 import dynamic from "next/dynamic";
 import {
   deleteClass,
+  deleteExam,
   deleteStudent,
   deleteSubject,
   deleteTeacher,
@@ -29,9 +30,9 @@ const deleteActionMap = {
   class: deleteClass,
   teacher: deleteTeacher,
   student: deleteStudent, // below that no delete action is implemented.
-  parent: deleteSubject,
+  exam: deleteExam,
   lesson: deleteSubject,
-  exam: deleteSubject,
+  parent: deleteSubject,
   assignment: deleteSubject,
   result: deleteSubject,
   attendance: deleteSubject,
@@ -123,8 +124,13 @@ const forms: {
   lesson: (type, data, setOpen) => (
     <LessonForm type={type} data={data} setOpen={setOpen} />
   ),
-  exam: (type, data, setOpen) => (
-    <ExamForm type={type} data={data} setOpen={setOpen} />
+  exam: (type, data, setOpen, relatedData) => (
+    <ExamForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
   ),
   assignment: (type, data, setOpen) => (
     <AssignmentForm type={type} data={data} setOpen={setOpen} />
